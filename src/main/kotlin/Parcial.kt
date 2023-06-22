@@ -2,10 +2,10 @@
 
 class Programa(
     val titulo: String,
-    val conductoresPrincipales: MutableSet<ConductorPrincipal>,
+    val conductoresPrincipales: List<ConductorPrincipal>,
     var presupuestoBase: Double,
     val sponsor: Sponsor,
-    val dia: String,
+    var dia: String,
     val duracion: Int,
     val ultimasEmisiones: MutableList<Int>
     ){
@@ -18,6 +18,7 @@ class Programa(
     }
     //Usé take para tomar las ultimas 5 emisiones, ya que no me gustaba no permitir agregar mas de 5 rating al programa.
     fun getPromedioUltimasEmisiones(): Double = this.ultimasEmisiones.take(n=NUM_EMISIONES).average()
+    fun cantidadConductores(): Int = this.conductoresPrincipales.size
 }
 
 //Para este caso (Restricciones), prefiero usar strategy, ya que el programa puede tener varios
@@ -37,7 +38,7 @@ class RestingirRating(val programa: Programa):IRestriccion{
 }
 
 class RestringirCantidadConductores(val programa: Programa):IRestriccion{
-    override fun restringir(): Boolean = programa.conductoresPrincipales.size > programa.CANT_CONDUCTORES_MAX
+    override fun restringir(): Boolean = programa.cantidadConductores() > programa.CANT_CONDUCTORES_MAX
 }
 
 class RestringirConductoresPuntuales(val programa: Programa):IRestriccion{
@@ -75,19 +76,58 @@ class RestringirCombinado(val programa: Programa):IRestriccion{
 }
 
 class Sponsor(){}
+val herbalife = Sponsor()
+
 class ConductorPrincipal(val nombre: String){}
 val juanCarlosPerezLoizeau = ConductorPrincipal(nombre = "Juan Carlos Perez Loizeau")
 val marioMonteverde = ConductorPrincipal(nombre = "Mario Monteverde")
 val pinky = ConductorPrincipal(nombre = "Pinky")
+val homero = ConductorPrincipal(nombre = "Homero")
 
 //Punto 2
+//Para esta parte me pareció mejor usar un observer
+abstract class Accion(val programa: Programa) {
+    abstract fun ejecutarAccion()
+}
 
+class DividirPrograma(programa: Programa): Accion(programa){
+    val mitadConductores = programa.cantidadConductores()/2
+    val primerosActores: List<ConductorPrincipal> = programa.conductoresPrincipales.take(n= mitadConductores)
+    val ultimosActores: List<ConductorPrincipal> = programa.conductoresPrincipales.takeLast(n=mitadConductores)
 
+    fun primerNombre(): String = "${programa.titulo.take(n = 1)} en el aire!"
+    fun segundoNombre(): String = if(programa.titulo.contains(" ")) programa.titulo.takeLast(n = 1) else "Programa Sin Nombre"
+
+    override fun ejecutarAccion() {
+        Programa(primerNombre(), primerosActores, programa.presupuestoBase/2, herbalife, programa.dia, programa.duracion/2, mutableListOf(4,4,5,10,12))
+        Programa(segundoNombre(), ultimosActores, programa.presupuestoBase/2, herbalife, programa.dia, programa.duracion/2, mutableListOf(5,5,5,10,5))
+    }
+}
+
+class ProgamarLosSimpsons(programa: Programa): Accion(programa){
+    override fun ejecutarAccion() {
+        Programa("Los Simpsons", mutableListOf(homero), 20000.00, herbalife, programa.dia, programa.duracion, mutableListOf(6,5,7,10,4))
+    }
+}
+
+class FusionarPrograma(programa: Programa): Accion(programa){
+    override fun ejecutarAccion() {
+        TODO("Not yet implemented")
+    }
+}
+
+class MoverPrograma(programa: Programa): Accion(programa){
+    override fun ejecutarAccion() {
+        programa.dia = "MARTES"
+    }
+
+}
 
 //Punto 3
 object Encargado{
     val programas: MutableSet<Programa> = mutableSetOf()
     val restricciones: MutableSet<Restriccion> = mutableSetOf()
+    val acciones: MutableSet<Accion> = mutableSetOf()
 
     fun restriccionesACumplir() = restricciones.none { it.seRestringe() }
 }

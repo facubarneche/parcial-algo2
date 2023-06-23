@@ -27,13 +27,12 @@ interface IRestriccion{
     fun restringir(): Boolean
 }
 
-class Restriccion(val programa: Programa){
+class Restriccion(programa: Programa){
     var tipoRestriccion: IRestriccion = RestingirRating(programa)
     fun seRestringe() = tipoRestriccion.restringir()
 }
 
 class RestingirRating(val programa: Programa):IRestriccion{
-
     override fun restringir(): Boolean = programa.getPromedioUltimasEmisiones() <= programa.MIN_RATING
 }
 
@@ -65,7 +64,6 @@ class RestringirPresupuesto(val programa: Programa):IRestriccion{
 //TODO: Ver este despues, me hace ruido (entendí la consigna???)
 class RestringirCombinado(val programa: Programa):IRestriccion{
     val TOPE_RATING = 5
-    val MAX_CONDUCTORES = 3
     val CONDUCTOR_ESTRELLA = "Pinky"
     val PRESUPUESTO_MAX = 100000
 
@@ -123,13 +121,38 @@ class MoverPrograma(programa: Programa): Accion(programa){
 
 }
 
+object grilla{
+    val programas: MutableList<Programa> = mutableListOf()
+}
+
 //Punto 3
 object Encargado{
-    val programas: MutableSet<Programa> = mutableSetOf()
     val restricciones: MutableSet<Restriccion> = mutableSetOf()
     val acciones: MutableSet<Accion> = mutableSetOf()
+    val programasARevision: MutableList<Programa> = mutableListOf()
 
-    fun restriccionesACumplir() = restricciones.none { it.seRestringe() }
+    fun definirRestricciones(restriccion: Restriccion){
+        restricciones.add(restriccion)
+    }
+
+    fun definirAcciones(accion: Accion){
+        acciones.add(accion)
+    }
+    val laNovelaDel13 = Programa("programita", mutableListOf(pinky), 2000.00, herbalife, "Jueves", 30, mutableListOf(6,5,7,10,4))
+    fun ejecutarRestriccion() = Restriccion(programa = laNovelaDel13).seRestringe()
+
+    fun agregarARevision(programa: Programa){
+        programasARevision.add(programa)
+    }
+
+    fun algunaRestriccionNoSeCumple(): Boolean = programasARevision.any { Restriccion(it).seRestringe() }
+
+    fun procesoRevision(){
+        if(this.algunaRestriccionNoSeCumple()){
+            acciones.forEach{ it.ejecutarAccion() }
+        }
+    }
+
 }
 
 
